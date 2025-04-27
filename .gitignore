@@ -1,0 +1,43 @@
+# Python cache files
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+
+# Environment files (Secrets!)
+.env
+
+# Log files
+*.log
+logs/
+
+# Docker
+*.pid
+*.seed
+docker-compose.override.yml
+
+# Virtual environments
+venv/
+.env/
+.envrc
+
+# Airflow (if you're using it)
+airflow.cfg
+unittest.cfg
+*.db
+*.sqlite
+
+# System files
+.DS_Store
+Thumbs.db
+
+# Build and distribution folders
+build/
+dist/
+*.egg-info/
+
+# IDE/editor settings
+.vscode/
+.idea/
+*.sublime-project
+*.sublime-workspace
