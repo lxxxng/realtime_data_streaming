@@ -1,6 +1,6 @@
 from datetime import datetime
-from airflow import DAG
-from airflow.operators.python import PythonOperator
+# from airflow import DAG
+# from airflow.operators.python import PythonOperator
 
 default_args = {
     'owner': 'airscholar',
@@ -44,20 +44,29 @@ def format_user_data(user):
 
 def stream_data():
     import json
+    from kafka import KafkaProducer
+    import time
+    
+    # get users
     user = fetch_user_data()
     cleaned_user = format_user_data(user)
     if cleaned_user:
         print(json.dumps(cleaned_user, indent=3))
+        
+    # producer
+    producer = KafkaProducer(bootstrap_servers='localhost:9092', 
+                             max_block_ms=5000)
+    producer.send('users_created', json.dumps(cleaned_user).encode('utf-8'))
 
-with DAG('user_automation', 
-         default_args=default_args,
-         schedule="@daily",
-         catchup=False) as dag:
+# with DAG('user_automation', 
+#          default_args=default_args,
+#          schedule="@daily",
+#          catchup=False) as dag:
     
-    streaming_task = PythonOperator(
-        task_id='stream_data_from_api',
-        python_callable=stream_data
-    )
+#     streaming_task = PythonOperator(
+#         task_id='stream_data_from_api',
+#         python_callable=stream_data
+#     )
 
 # Optional testing
 if __name__ == "__main__":
