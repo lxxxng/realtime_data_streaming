@@ -344,7 +344,7 @@ services:
     environment:
       SCHEMA_REGISTRY_HOST_NAME: schema-registry
       SCHEMA_REGISTRY_KAFKASTORE_BOOTSTRAP_SERVERS: 'broker:29092'
-      SCHEMA_REGISTRY_LISTENERS: https://0.0.0.0:8081
+      SCHEMA_REGISTRY_LISTENERS: http://0.0.0.0:8081
     healthcheck:
       test: ['CMD', 'curl', '-f', 'http://localhost:8081']
       interval: 30s
@@ -368,7 +368,8 @@ services:
       CONTROL_CENTER_MONITORING_INTERCEPTOR_TOPIC_PARTITIONS: 1
       CONFLUENT_METRICS_TOPIC_REPLICATION: 1
       CONFLUENT_METRICS_ENABLE: 'false'
-      PORT: 9021 
+    ports:
+      - "9021:9021"
 
 volumes:
   postgres-db-volume:
