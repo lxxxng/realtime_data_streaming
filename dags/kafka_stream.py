@@ -1,6 +1,6 @@
 from datetime import datetime
-# from airflow import DAG
-# from airflow.operators.python import PythonOperator
+from airflow import DAG
+from airflow.operators.python import PythonOperator
 
 default_args = {
     'owner': 'airscholar',
@@ -9,9 +9,10 @@ default_args = {
 
 def fetch_user_data():
     import requests
+    import random
     res = requests.get("https://jsonplaceholder.typicode.com/users")
     if res.status_code == 200:
-        user = res.json()[0]  # Take the first user
+        user = res.json()[random.randint(0,9)]  # Take the first user
         return user
     else:
         print(f"Failed to fetch data. Status code: {res.status_code}")
@@ -46,28 +47,35 @@ def stream_data():
     import json
     from kafka import KafkaProducer
     import time
-    
-    # get users
-    user = fetch_user_data()
-    cleaned_user = format_user_data(user)
-    if cleaned_user:
-        print(json.dumps(cleaned_user, indent=3))
-        
+    import logging
+
     # producer
-    producer = KafkaProducer(bootstrap_servers='localhost:9092', 
+    producer = KafkaProducer(bootstrap_servers='broker:29092', 
                              max_block_ms=5000)
-    producer.send('users_created', json.dumps(cleaned_user).encode('utf-8'))
-
-# with DAG('user_automation', 
-#          default_args=default_args,
-#          schedule="@daily",
-#          catchup=False) as dag:
     
-#     streaming_task = PythonOperator(
-#         task_id='stream_data_from_api',
-#         python_callable=stream_data
-#     )
+    curr_time = time.time()
+    while True:
+        if time.time() > curr_time + 60:    # 1 min
+            break
+        try:
+            # get users
+            user = fetch_user_data()
+            cleaned_user = format_user_data(user)
+        
+            producer.send('users_created', json.dumps(cleaned_user).encode('utf-8'))
+        except Exception as e:
+            logging.error(f"An error occured: {e}")
+            continue
 
-# Optional testing
+with DAG('user_automation', 
+         default_args=default_args,
+         schedule="@daily",
+         catchup=False) as dag:
+    
+    streaming_task = PythonOperator(
+        task_id='stream_data_from_api',
+        python_callable=stream_data
+    )
+
 if __name__ == "__main__":
     stream_data()

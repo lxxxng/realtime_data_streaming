@@ -49,8 +49,8 @@ x-airflow-common:
   # In order to add custom dependencies or upgrade provider packages you can use your extended image.
   # Comment the image line, place your Dockerfile in the directory where you placed the docker-compose.yaml
   # and uncomment the "build" line below, Then run `docker-compose build` to build the images.
-  image: apache/airflow:2.9.0-python3.11
-  # build: .
+  #image: apache/airflow:2.9.0-python3.11
+  build: .
   environment:
     &airflow-common-env
     AIRFLOW__CORE__EXECUTOR: CeleryExecutor
@@ -113,6 +113,49 @@ services:
       start_period: 30s
     restart: always
 
+  cassandra:
+    image: cassandra:latest
+    container_name: cassandra
+    environment:
+      - CASSANDRA_CLUSTER_NAME=Test Cluster
+      - CASSANDRA_DC=DC1
+      - CASSANDRA_RACK=RAC1
+    ports:
+      - "9042:9042"  # Cassandra default port
+    volumes:
+      - cassandra-data:/var/lib/cassandra  # Persistent storage
+    healthcheck:
+      test: ["CMD", "cqlsh", "-e", "describe keyspaces"]
+      interval: 10s
+      retries: 5
+      start_period: 5s
+    restart: always
+
+  spark-master:
+    image: bitnami/spark:latest
+    container_name: spark-master
+    environment:
+      - SPARK_MODE=master
+      - SPARK_MASTER_HOST=spark-master
+    ports:
+      - "9090:8080"  # Spark UI port
+      - "7077:7077"  # Spark Master port
+    restart: always
+
+  spark-worker:
+    image: bitnami/spark:latest
+    container_name: spark-worker
+    environment:
+      - SPARK_MODE=worker
+      - SPARK_MASTER_URL=spark://spark-master:7077  # Connect worker to master
+      - SPARK_WORKER_CORES=2  # Allocate 2 CPU cores to the worker
+      - SPARK_WORKER_MEMORY=1g  # Allocate 1 GB of memory to the worker
+    depends_on:
+      - spark-master  # Ensure the Spark master is up before starting the worker
+    restart: always
+
+
+
   airflow-webserver:
     <<: *airflow-common
     command: webserver
@@ -129,6 +172,7 @@ services:
       <<: *airflow-common-depends-on
       airflow-init:
         condition: service_completed_successfully
+
 
   airflow-scheduler:
     <<: *airflow-common
@@ -371,5 +415,8 @@ services:
     ports:
       - "9021:9021"
 
+
+
 volumes:
   postgres-db-volume:
+  cassandra-data:

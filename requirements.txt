@@ -1,2 +1,5 @@
 requests
 kafka-python
+spark 
+pyspark
+cassandra-driver
